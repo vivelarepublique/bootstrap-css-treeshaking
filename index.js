@@ -9,7 +9,8 @@ const cssContent = paragraph.map(el => {
     const index = el.indexOf('{');
     return {
         selector: el.substring(0, index),
-        content: el,
+        content: el.substring(index),
+        overall: el,
     };
 });
 
@@ -24,12 +25,9 @@ if (argv?.[2]) {
     const step1Result = [];
 
     elementArray.forEach(el => {
-        const elRegex1 = new RegExp(`(?<!-)${el}\\s`, 'g');
-        const elRegex2 = new RegExp(`(?<!-)${el},`, 'g');
-        cssContent.forEach(({ selector, content }) => {
-            if (elRegex1.test(selector) || elRegex2.test(selector)) {
-                step1Result.push(content);
-            }
+        const elRegex = new RegExp(`(?<![\\.\\-])${el}(?![\\.\\-])`, 'g');
+        cssContent.forEach(({ selector, overall }) => {
+            if (elRegex.test(selector) && !selector.includes('.') && !selector.includes('type')) step1Result.push(overall);
         });
     });
 
@@ -41,19 +39,29 @@ if (argv?.[2]) {
     const step2Result = [];
 
     classNameArray.forEach(el => {
-        const elRegex1 = new RegExp(`(?<=\.)${el}\\s`, 'g');
-        const elRegex2 = new RegExp(`(?<=\.)${el}\:`, 'g');
-        const elRegex3 = new RegExp(`(?<=\.)${el}\.`, 'g');
-        cssContent.forEach(({ selector, content }) => {
-            if (elRegex1.test(selector) || elRegex2.test(selector) || elRegex3.test(selector)) {
-                step2Result.push(content);
-            }
+        const elRegex = new RegExp(`(?<=\\.)${el}(?!-)`, 'g');
+
+        cssContent.forEach(({ selector, overall }) => {
+            if (elRegex.test(selector)) step2Result.push(overall);
         });
     });
 
-    console.log(elementArray, '\n', classNameArray);
+    //types
+    const types = body.match(/(?<=type=").+?(?=")/g);
+    const typesArray = Array.from(new Set(types));
 
-    const minCss = Array.from(new Set([...step1Result, ...step2Result])).reduce((acc, cur) => acc + '\n\n' + cur, '');
+    const step3Result = [];
+
+    typesArray.forEach(el => {
+        const elString = `[type="${el}"]`;
+        cssContent.forEach(({ selector, overall }) => {
+            if (selector.includes(elString)) step3Result.push(overall);
+        });
+    });
+
+    console.log(elementArray, '\n', classNameArray, '\n', typesArray);
+
+    const minCss = Array.from(new Set([...step1Result, ...step2Result, ...step3Result])).reduce((acc, cur) => acc + '\n\n' + cur, '');
 
     writeFileSync(join('test/', 'min.css'), minCss);
 }
