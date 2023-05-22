@@ -4,7 +4,7 @@ const { argv } = require('process');
 
 const css = readFileSync('bootstrap.css', { encoding: 'utf-8' });
 
-const paragraph = css.split(/(?<=\n\})\n(?=\n)/gm).map(el => el.trim());
+const paragraph = (css.includes('\r\n') ? css.split(/(?<=\r\n\})\r\n(?=\r\n)/gm) : css.split(/(?<=\n\})\n(?=\n)/gm)).map(el => el.trim());
 const cssContent = paragraph.map(el => {
     const index = el.indexOf('{');
     return {
@@ -33,7 +33,6 @@ if (argv?.[2]) {
 
     //class names
     const classNames = body.match(/(?<=class=").+?(?=")/g);
-
     const classNameArray = Array.from(new Set(Array.from(classNames).reduce((acc, cur) => acc.concat(cur.split(' ')), [])));
 
     const step2Result = [];
@@ -61,7 +60,9 @@ if (argv?.[2]) {
 
     console.log(elementArray, '\n', classNameArray, '\n', typesArray);
 
-    const minCss = Array.from(new Set([...step1Result, ...step2Result, ...step3Result])).reduce((acc, cur) => acc + '\n\n' + cur, '');
+    const minCss = Array.from(new Set([...step1Result, ...step2Result, ...step3Result]))
+        .reduce((acc, cur) => acc + '\n\n' + cur, '')
+        .trim();
 
     writeFileSync(join('test/', 'min.css'), minCss);
 }
