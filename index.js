@@ -1,6 +1,7 @@
 const { readFileSync, writeFileSync } = require('fs');
 const { join } = require('path');
 const { argv } = require('process');
+const { createInterface } = require('readline');
 
 const css = readFileSync('bootstrap.css', { encoding: 'utf-8' });
 
@@ -14,57 +15,93 @@ const cssContent = paragraph.map(el => {
     };
 });
 
-if (argv?.[2]) {
-    const html = readFileSync(argv[2], { encoding: 'utf-8' });
-    const body = html.match(/(?<=<body>)([\s\S]*)(?=<\/body>)/i)?.[0];
+const rl = createInterface({
+    input: process.stdin,
+    output: process.stdout,
+});
+prompt();
 
-    //elements
-    const elements = body.match(/(?<=<)\w+(?=\s)/g);
-    const elementArray = Array.from(new Set(elements));
+function prompt() {
+    rl.question('Do you need to load the styles of \x1b[34mhtml\x1b[0m and \x1b[33mbody\x1b[0m? (\x1b[32myes\x1b[0m/\x1b[31mno\x1b[0m, default is \x1b[32myes\x1b[0m): ', input => {
+        input = input.trim().toLowerCase();
 
-    const step1Result = [];
-
-    elementArray.forEach(el => {
-        const elRegex = new RegExp(`(?<![\\.\\-])${el}(?![\\.\\-])`, 'g');
-        cssContent.forEach(({ selector, overall }) => {
-            if (elRegex.test(selector) && !selector.includes('.') && !selector.includes('type')) step1Result.push(overall);
-        });
+        if (input === 'yes' || !input) {
+            writeCssFile(true, argv?.[2]);
+            rl.close();
+        } else if (input === 'no') {
+            writeCssFile(false, argv?.[2]);
+            rl.close();
+        } else {
+            console.log('unrecognized input!');
+            prompt();
+        }
     });
+}
 
-    //class names
-    const classNames = body.match(/(?<=class=").+?(?=")/g);
-    const classNameArray = Array.from(new Set(Array.from(classNames).reduce((acc, cur) => acc.concat(cur.split(' ')), [])));
+function writeCssFile(defaultValue, fileArgument) {
+    const specialElements = ['html', 'body'];
 
-    const step2Result = [];
+    if (fileArgument) {
+        const html = readFileSync(argv[2], { encoding: 'utf-8' });
+        const body = html.match(/(?<=<body>)([\s\S]*)(?=<\/body>)/i)?.[0];
 
-    classNameArray.forEach(el => {
-        const elRegex = new RegExp(`(?<=\\.)${el}(?!-)`, 'g');
+        //specialElements
+        const specialElementsResult = [];
+        if (defaultValue) {
+            specialElements.forEach(el => specialElementsResult.push(cssContent.find(({ selector }) => selector.trim() === el).overall));
+            specialElementsResult.push(`*,\n*::before,\n*::after {\n\tbox-sizing: border-box;\n}`);
+        }
 
-        cssContent.forEach(({ selector, overall }) => {
-            if (elRegex.test(selector)) step2Result.push(overall);
+        //elements
+        const elements = body.match(/(?<=<)\w+(?=\s)/g);
+        const elementArray = Array.from(new Set(elements));
+
+        const step1Result = [];
+
+        elementArray.forEach(el => {
+            const elRegex = new RegExp(`(?<![\\.\\-])${el}(?![\\.\\-])`, 'g');
+            cssContent.forEach(({ selector, overall }) => {
+                if (elRegex.test(selector) && !selector.includes('.') && !selector.includes('type')) step1Result.push(overall);
+            });
         });
-    });
 
-    //types
-    const types = body.match(/(?<=type=").+?(?=")/g);
-    const typesArray = Array.from(new Set(types));
+        //class names
+        const classNames = body.match(/(?<=class=").+?(?=")/g);
+        const classNameArray = Array.from(new Set(Array.from(classNames).reduce((acc, cur) => acc.concat(cur.split(' ')), [])));
 
-    const step3Result = [];
+        const step2Result = [];
 
-    typesArray.forEach(el => {
-        const elString = `[type="${el}"]`;
-        cssContent.forEach(({ selector, overall }) => {
-            if (selector.includes(elString)) step3Result.push(overall);
+        classNameArray.forEach(el => {
+            const elRegex = new RegExp(`(?<=\\.)${el}(?!-)`, 'g');
+
+            cssContent.forEach(({ selector, overall }) => {
+                if (elRegex.test(selector)) step2Result.push(overall);
+            });
         });
-    });
 
-    console.log(elementArray, '\n', classNameArray, '\n', typesArray);
+        //types
+        const types = body.match(/(?<=type=").+?(?=")/g);
+        const typesArray = Array.from(new Set(types));
 
-    const minCss = Array.from(new Set([...step1Result, ...step2Result, ...step3Result]))
-        .reduce((acc, cur) => acc + '\n\n' + cur, '')
-        .trim();
+        const step3Result = [];
 
-    writeFileSync(join('test/', 'min.css'), minCss);
+        typesArray.forEach(el => {
+            const elString = `[type="${el}"]`;
+            cssContent.forEach(({ selector, overall }) => {
+                if (selector.includes(elString)) step3Result.push(overall);
+            });
+        });
+
+        console.log(elementArray, '\n', classNameArray, '\n', typesArray);
+
+        const minCss = Array.from(new Set([...specialElementsResult, ...step1Result, ...step2Result, ...step3Result]))
+            .reduce((acc, cur) => acc + '\n\n' + cur, '')
+            .trim();
+
+        writeFileSync(join('test/', 'min.css'), minCss);
+    } else {
+        console.log('The template html file was not found, please make sure that the command you executed contains an html file. \nSuch as: node .\\index.js test/index.html');
+    }
 }
 
 // console.log('\x1b[31mRed text\x1b[0m');
