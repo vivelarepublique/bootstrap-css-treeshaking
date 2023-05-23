@@ -92,7 +92,7 @@ function writeCssFile(defaultValue, fileArgument) {
             });
         });
 
-        console.log(elementArray, '\n', classNameArray, '\n', typesArray);
+        //console.log(elementArray, '\n', classNameArray, '\n', typesArray);
 
         const minCss = Array.from(new Set([...specialElementsResult, ...step1Result, ...step2Result, ...step3Result]))
             .reduce((acc, cur) => acc + '\n\n' + cur, '')
@@ -103,10 +103,3 @@ function writeCssFile(defaultValue, fileArgument) {
         console.log('The template html file was not found, please make sure that the command you executed contains an html file. \nSuch as: node .\\index.js test/index.html');
     }
 }
-
-// console.log('\x1b[31mRed text\x1b[0m');
-// console.log('\x1b[32mGreen text\x1b[0m');
-// console.log('\x1b[33mYellow text\x1b[0m');
-// console.log('\x1b[34mBlue text\x1b[0m');
-// console.log('\x1b[35mMagenta text\x1b[0m');
-// console.log('\x1b[36mCyan text\x1b[0m');
