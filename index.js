@@ -64,6 +64,9 @@ function writeCssFile(defaultValue, fileArgument) {
         elementArray.forEach(el => {
             cssContent.forEach(({ selector, overall }) => {
                 if (selector.includes(el) && !selector.includes('.') && !selector.includes('type')) step1Result.push(overall);
+                selector.forEach(item => {
+                    if (item.includes(':') && item.substring(0, item.indexOf(':')) === el) step1Result.push(overall);
+                });
             });
         });
 
@@ -76,6 +79,9 @@ function writeCssFile(defaultValue, fileArgument) {
         classNameArray.forEach(el => {
             cssContent.forEach(({ selector, overall }) => {
                 if (selector.includes(`.${el}`)) step2Result.push(overall);
+                selector.forEach(item => {
+                    if (item.includes(':') && item.substring(1, item.indexOf(':')) === el) step1Result.push(overall);
+                });
             });
         });
 
