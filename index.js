@@ -22,26 +22,44 @@ const rl = createInterface({
     input: process.stdin,
     output: process.stdout,
 });
-prompt();
 
-function prompt() {
-    rl.question('Do you need to load the styles of \x1b[34mhtml\x1b[0m and \x1b[33mbody\x1b[0m? (\x1b[32myes\x1b[0m/\x1b[31mno\x1b[0m, default is \x1b[32myes\x1b[0m): ', input => {
+globalStyle();
+
+function mediaQueries(globalStyle) {
+    rl.question('Do you need to load the styles of \x1b[35mMedia Queries\x1b[0m ? (\x1b[32myes\x1b[0m/\x1b[31mno\x1b[0m, default is \x1b[32myes\x1b[0m): ', input => {
         input = input.trim().toLowerCase();
+        console.log(input ? input : 'yes');
 
         if (input === 'yes' || !input) {
-            writeCssFile(true, argv?.[2]);
+            writeCssFile(globalStyle, true, argv?.[2]);
             rl.close();
         } else if (input === 'no') {
-            writeCssFile(false, argv?.[2]);
+            writeCssFile(globalStyle, false, argv?.[2]);
             rl.close();
         } else {
             console.log('unrecognized input!');
-            prompt();
+            mediaQueries();
         }
     });
 }
 
-function writeCssFile(defaultValue, fileArgument) {
+function globalStyle() {
+    rl.question('Do you need to load the styles of \x1b[34mhtml\x1b[0m and \x1b[33mbody\x1b[0m? (\x1b[32myes\x1b[0m/\x1b[31mno\x1b[0m, default is \x1b[32myes\x1b[0m): ', input => {
+        input = input.trim().toLowerCase();
+        console.log(input ? input : 'yes');
+
+        if (input === 'yes' || !input) {
+            mediaQueries(true);
+        } else if (input === 'no') {
+            mediaQueries(false);
+        } else {
+            console.log('unrecognized input!');
+            globalStyle();
+        }
+    });
+}
+
+function writeCssFile(globalStyle, mediaQueries, fileArgument) {
     const specialElements = ['html', 'body'];
 
     if (fileArgument) {
@@ -50,7 +68,7 @@ function writeCssFile(defaultValue, fileArgument) {
 
         //specialElements
         const specialElementsResult = [];
-        if (defaultValue) {
+        if (globalStyle) {
             specialElements.forEach(el => specialElementsResult.push(cssContent.find(({ selector }) => selector?.[0].trim() === el).overall));
             specialElementsResult.push(`*,\n*::before,\n*::after {\n\tbox-sizing: border-box;\n}`);
         }
@@ -98,9 +116,54 @@ function writeCssFile(defaultValue, fileArgument) {
             });
         });
 
-        console.log(elementArray, '\n', classNameArray, '\n', typesArray);
+        //mediaQueries
+        const mediaQueriesResult = [];
+        if (mediaQueries) {
+            const mediaQueries = cssContent.filter(({ selector }) => selector?.[0].includes('@media'));
+            mediaQueries.forEach(({ selector, content }) => {
+                const classRules = (content.includes('\r\n') ? content.substring(1, content.length - 1).split(/(?<=\})\r\n(?=\r\n)/gm) : content.substring(1, content.length - 1).split(/(?<=\})\n(?=\n)/gm)).map(el => el.trim());
+                const subRule = [];
+                classRules.forEach(el => {
+                    const index = el.indexOf('{');
+                    const subSelector = [];
+                    el.substring(0, index)
+                        .split(',')
+                        .map(item => item.trim())
+                        .forEach(item => {
+                            if (item.includes(':')) {
+                                const colonIndex = item.indexOf(':');
+                                if (classNameArray.includes(item.substring(1, colonIndex))) subSelector.push(item);
+                            }
+                            if (item.includes('>')) {
+                                const bigIndex = item.indexOf('>');
+                                if (classNameArray.includes(item.substring(1, bigIndex)) || classNameArray.includes(item.substring(bigIndex + 1))) subSelector.push(item);
+                                if (item.includes('+')) {
+                                    const plusSub = item.substring(bigIndex);
+                                    const plusIndex = plusSub.indexOf('+');
+                                    if (classNameArray.includes(plusSub.substring(2, plusIndex)) || classNameArray.includes(plusSub.substring(plusIndex + 2))) subSelector.push(item);
+                                }
+                            }
+                            if (item.includes(' ')) {
+                                const spaceIndex = item.indexOf(' ');
+                                if (classNameArray.includes(item.substring(1, spaceIndex)) || classNameArray.includes(item.substring(spaceIndex + 1))) subSelector.push(item);
+                            }
+                            if (classNameArray.includes(item.substring(1))) subSelector.push(item);
+                        });
+                    if (subSelector.length) {
+                        const result = subSelector.reduce((acc, cur) => acc + ',\n\t' + cur) + ' ' + el.substring(index);
+                        subRule.push(result);
+                    }
+                });
+                if (subRule.length) {
+                    const result = selector + ' {\n\t' + subRule.reduce((acc, cur) => acc + '\n\n\t' + cur) + '\n}\n';
+                    mediaQueriesResult.push(result);
+                }
+            });
+        }
 
-        const minCss = Array.from(new Set([...specialElementsResult, ...step1Result, ...step2Result, ...step3Result]))
+        //console.log(elementArray, '\n', classNameArray, '\n', typesArray);
+
+        const minCss = Array.from(new Set([...specialElementsResult, ...step1Result, ...step2Result, ...step3Result, ...mediaQueriesResult]))
             .reduce((acc, cur) => acc + '\n\n' + cur, '')
             .trim();
 
