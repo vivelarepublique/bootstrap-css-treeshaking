@@ -7,62 +7,121 @@
         <title>test</title>
     </head>
     <body>
-        <div class="container">
-            <div class="row">
-                <div class="col-sm">One of three columns</div>
-                <div class="col-sm">One of three columns</div>
-                <div class="col-sm">One of three columns</div>
-            </div>
-        </div>
+        <div id="my-app">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-2 my-left-area">
+                        <div>Enter User Details</div>
+                        <div class="input-group">
+                            <input v-model.lazy.trim="user.loginID" :disabled="isGet" :class="{disabled: isGet}" class="form-control" type="text" placeholder="Login ID" name="my-name" />
+                            <div class="input-group-append">
+                                <span class="input-group-text">@</span>
+                            </div>
+                        </div>
+                        <div><button :disabled="isGet" :class="{disabled: isGet}" class="btn btn-primary" @click="checkUser">Get User Details</button></div>
+                    </div>
+                    <div class="col-10">
+                        <div class="my-title">IT Assets Assignment & Replacement Workflow</div>
+                        <h3 class="my-h3"><span class="badge badge-info my-badge">User Details</span></h3>
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr class="my-tr">
+                                    <th scope="col">Login ID</th>
+                                    <th scope="col">Full Name</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="my-tr">
+                                    <td>{{user.loginID}}</td>
+                                    <td>{{user.fullName}}</td>
+                                    <td><input v-model="user.ticketResolved" type="checkbox" /></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <h3 class="my-h3"><span class="badge badge-info my-badge">Assign Type</span></h3>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn" :class="{ 'btn-success' : isNew ,'btn-secondary' : !isNew }" @click="change">Replacement</button>
+                            <button type="button" class="btn" :class="{ 'btn-secondary' : isNew ,'btn-success' : !isNew }" @click="change">New Assignment</button>
+                        </div>
 
-        <button type="button" class="btn btn-primary">Primary</button>
-        <button type="button" class="btn btn-secondary">Secondary</button>
-        <button type="button" class="btn btn-success">Success</button>
-        <button type="button" class="btn btn-danger">Danger</button>
-        <button type="button" class="btn btn-warning">Warning</button>
-        <button type="button" class="btn btn-info">Info</button>
-        <button type="button" class="btn btn-light">Light</button>
-        <button type="button" class="btn btn-dark">Dark</button>
+                        <div class="container">
+                            <div class="row">
+                                <div class="col-10">
+                                    <table class="table table-bordered" v-if="isNew">
+                                        <thead>
+                                            <tr class="my-tr">
+                                                <th scope="col"><span class="my-th-span">Select Asset Type</span></th>
+                                                <th scope="col"><span class="my-th-span">Existing Serial No.</span></th>
+                                                <th scope="col"><span class="my-th-span">New Serial No.</span></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="asset in assetType" class="my-tr">
+                                                <td><input v-model="asset.select" type="checkbox" /> {{asset.text}}</td>
+                                                <td>
+                                                    <div class="input-group">
+                                                        <input v-model="asset.value" class="form-control" type="text" placeholder="Enter Serial Number" />
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div class="input-group">
+                                                        <input v-model="asset.newValue" class="form-control" type="text" placeholder="Enter Serial Number" />
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                    <table class="table table-bordered" v-if="!isNew">
+                                        <thead>
+                                            <tr class="my-tr">
+                                                <th scope="col"><span class="my-th-span">Select Asset Type</span></th>
+                                                <th scope="col"><span class="my-th-span">New Serial No.</span></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="asset in assetType" class="my-tr">
+                                                <td><input v-model="asset.select" type="checkbox" /> {{asset.text}}</td>
+                                                <td>
+                                                    <div class="input-group">
+                                                        <input v-model="asset.newValue" class="form-control" type="text" placeholder="Enter Serial Number" />
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
 
-        <button type="button" class="btn btn-link">Link</button>
+                        <div><button :disabled="isDone" :class="{disabled: isDone}" class="btn btn-primary" @click="createTicket">Create Ticket</button></div>
+                        <h3 class="my-h3"><span v-if="checkResultIsDone" class="badge badge-info my-badge">Ticket Details</span></h3>
 
-        <div class="input-group mb-3">
-            <div class="input-group-prepend">
-                <span class="input-group-text" id="basic-addon1">@</span>
+                        <div class="container">
+                            <div class="row">
+                                <div class="col-10">
+                                    <table class="table table-bordered" v-if="checkResultIsDone">
+                                        <thead>
+                                            <tr class="my-tr">
+                                                <th scope="col"><span class="my-th-span">Asset Type</span></th>
+                                                <th scope="col"><span class="my-th-span">Ticket Short ID</span></th>
+                                                <th scope="col"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="result in createResult" class="my-tr">
+                                                <td>{{result.type}}</td>
+                                                <td><a :href="'https://test.com/' + result.shortID" target="_blank">{{result.shortID}}</a></td>
+                                                <td><button class="btn btn-primary" @click="setClipboard(result.shortID)">Copy</button></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="my-reset-form"><button class="btn btn-primary" @click="resetForm">Reset Form</button></div>
+                    </div>
+                </div>
             </div>
-            <input type="text" class="form-control" placeholder="Username" aria-label="Username" aria-describedby="basic-addon1" />
-        </div>
-
-        <div class="input-group mb-3">
-            <input type="text" class="form-control" placeholder="Recipient's username" aria-label="Recipient's username" aria-describedby="basic-addon2" />
-            <div class="input-group-append">
-                <span class="input-group-text" id="basic-addon2">@example.com</span>
-            </div>
-        </div>
-
-        <label for="basic-url">Your vanity URL</label>
-        <div class="input-group mb-3">
-            <div class="input-group-prepend">
-                <span class="input-group-text" id="basic-addon3">https://example.com/users/</span>
-            </div>
-            <input type="text" class="form-control" id="basic-url" aria-describedby="basic-addon3" />
-        </div>
-
-        <div class="input-group mb-3">
-            <div class="input-group-prepend">
-                <span class="input-group-text">$</span>
-            </div>
-            <input type="text" class="form-control" aria-label="Amount (to the nearest dollar)" />
-            <div class="input-group-append">
-                <span class="input-group-text">.00</span>
-            </div>
-        </div>
-
-        <div class="input-group">
-            <div class="input-group-prepend">
-                <span class="input-group-text">With textarea</span>
-            </div>
-            <textarea class="form-control" aria-label="With textarea"></textarea>
         </div>
     </body>
 </html>

@@ -9,7 +9,10 @@ const paragraph = (css.includes('\r\n') ? css.split(/(?<=\r\n\})\r\n(?=\r\n)/gm)
 const cssContent = paragraph.map(el => {
     const index = el.indexOf('{');
     return {
-        selector: el.substring(0, index),
+        selector: el
+            .substring(0, index)
+            .split(',')
+            .map(items => items.trim()),
         content: el.substring(index),
         overall: el,
     };
@@ -48,34 +51,31 @@ function writeCssFile(defaultValue, fileArgument) {
         //specialElements
         const specialElementsResult = [];
         if (defaultValue) {
-            specialElements.forEach(el => specialElementsResult.push(cssContent.find(({ selector }) => selector.trim() === el).overall));
+            specialElements.forEach(el => specialElementsResult.push(cssContent.find(({ selector }) => selector?.[0].trim() === el).overall));
             specialElementsResult.push(`*,\n*::before,\n*::after {\n\tbox-sizing: border-box;\n}`);
         }
 
         //elements
-        const elements = body.match(/(?<=<)\w+(?=\s)/g);
+        const elements = body.match(/(?<=<)\w+(?=\s|(?=>))/g);
         const elementArray = Array.from(new Set(elements));
 
         const step1Result = [];
 
         elementArray.forEach(el => {
-            const elRegex = new RegExp(`(?<![\\.\\-])${el}(?![\\.\\-])`, 'g');
             cssContent.forEach(({ selector, overall }) => {
-                if (elRegex.test(selector) && !selector.includes('.') && !selector.includes('type')) step1Result.push(overall);
+                if (selector.includes(el) && !selector.includes('.') && !selector.includes('type')) step1Result.push(overall);
             });
         });
 
         //class names
-        const classNames = body.match(/(?<=class=").+?(?=")/g);
+        const classNames = body.match(/(?<=class=")[a-zA-Z0-9\-\s]+?(?=")/g);
         const classNameArray = Array.from(new Set(Array.from(classNames).reduce((acc, cur) => acc.concat(cur.split(' ')), [])));
 
         const step2Result = [];
 
         classNameArray.forEach(el => {
-            const elRegex = new RegExp(`(?<=\\.)${el}(?!-)`, 'g');
-
             cssContent.forEach(({ selector, overall }) => {
-                if (elRegex.test(selector)) step2Result.push(overall);
+                if (selector.includes(`.${el}`)) step2Result.push(overall);
             });
         });
 
@@ -86,13 +86,13 @@ function writeCssFile(defaultValue, fileArgument) {
         const step3Result = [];
 
         typesArray.forEach(el => {
-            const elString = `[type="${el}"]`;
+            const elString = `input[type=\"${el}\"]`;
             cssContent.forEach(({ selector, overall }) => {
                 if (selector.includes(elString)) step3Result.push(overall);
             });
         });
 
-        //console.log(elementArray, '\n', classNameArray, '\n', typesArray);
+        console.log(elementArray, '\n', classNameArray, '\n', typesArray);
 
         const minCss = Array.from(new Set([...specialElementsResult, ...step1Result, ...step2Result, ...step3Result]))
             .reduce((acc, cur) => acc + '\n\n' + cur, '')
