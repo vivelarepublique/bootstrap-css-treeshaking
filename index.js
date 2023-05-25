@@ -79,10 +79,13 @@ function writeCssFile(globalStyle, mediaQueries, fileArgument) {
 
         const step1Result = [];
 
-        elementArray.forEach(el => {
-            cssContent.forEach(({ selector, overall }) => {
-                if (selector.includes(el) && !selector.includes('.') && !selector.includes('type')) step1Result.push(overall);
+        elementArray.forEach((el, _, self) => {
+            cssContent.forEach(({ selector, content, overall }) => {
                 selector.forEach(item => {
+                    if (self.includes(item)) {
+                        const result = item + ' ' + content;
+                        step1Result.push(result);
+                    }
                     if (item.includes(':') && item.substring(0, item.indexOf(':')) === el) step1Result.push(overall);
                 });
             });
@@ -94,11 +97,23 @@ function writeCssFile(globalStyle, mediaQueries, fileArgument) {
 
         const step2Result = [];
 
-        classNameArray.forEach(el => {
-            cssContent.forEach(({ selector, overall }) => {
-                if (selector.includes(`.${el}`)) step2Result.push(overall);
+        classNameArray.forEach((el, _, self) => {
+            cssContent.forEach(({ selector, content }) => {
                 selector.forEach(item => {
-                    if (item.includes(':') && item.substring(1, item.indexOf(':')) === el) step1Result.push(overall);
+                    if (item.includes('>') || item.includes('+')) {
+                        if (item.match(/(?<=\.)[a-zA-Z0-9\-]+/g)?.every(m => self.includes(m))) {
+                            const result = item + ' ' + content;
+                            step2Result.push(result);
+                        }
+                    } else if (item.includes(':')) {
+                        if (item.substring(1, item.indexOf(':')) === el) {
+                            const result = item + ' ' + content;
+                            step2Result.push(result);
+                        }
+                    } else if (self.includes(item.substring(1))) {
+                        const result = item + ' ' + content;
+                        step2Result.push(result);
+                    }
                 });
             });
         });
@@ -111,8 +126,11 @@ function writeCssFile(globalStyle, mediaQueries, fileArgument) {
 
         typesArray.forEach(el => {
             const elString = `input[type=\"${el}\"]`;
-            cssContent.forEach(({ selector, overall }) => {
-                if (selector.includes(elString)) step3Result.push(overall);
+            cssContent.forEach(({ selector, content }) => {
+                if (selector.includes(elString)) {
+                    const result = elString + ' ' + content;
+                    step3Result.push(result);
+                }
             });
         });
 
@@ -130,24 +148,14 @@ function writeCssFile(globalStyle, mediaQueries, fileArgument) {
                         .split(',')
                         .map(item => item.trim())
                         .forEach(item => {
-                            if (item.includes(':')) {
+                            if (item.includes('>') || item.includes('+') || item.includes(' ')) {
+                                if (item.match(/(?<=\.)[a-zA-Z0-9\-]+/g)?.every(m => classNameArray.includes(m))) subSelector.push(item);
+                            } else if (item.includes(':')) {
                                 const colonIndex = item.indexOf(':');
                                 if (classNameArray.includes(item.substring(1, colonIndex))) subSelector.push(item);
+                            } else if (classNameArray.includes(item.substring(1))) {
+                                subSelector.push(item);
                             }
-                            if (item.includes('>')) {
-                                const bigIndex = item.indexOf('>');
-                                if (classNameArray.includes(item.substring(1, bigIndex)) || classNameArray.includes(item.substring(bigIndex + 1))) subSelector.push(item);
-                                if (item.includes('+')) {
-                                    const plusSub = item.substring(bigIndex);
-                                    const plusIndex = plusSub.indexOf('+');
-                                    if (classNameArray.includes(plusSub.substring(2, plusIndex)) || classNameArray.includes(plusSub.substring(plusIndex + 2))) subSelector.push(item);
-                                }
-                            }
-                            if (item.includes(' ')) {
-                                const spaceIndex = item.indexOf(' ');
-                                if (classNameArray.includes(item.substring(1, spaceIndex)) || classNameArray.includes(item.substring(spaceIndex + 1))) subSelector.push(item);
-                            }
-                            if (classNameArray.includes(item.substring(1))) subSelector.push(item);
                         });
                     if (subSelector.length) {
                         const result = subSelector.reduce((acc, cur) => acc + ',\n\t' + cur) + ' ' + el.substring(index);
