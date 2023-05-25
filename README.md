@@ -1,8 +1,8 @@
-# bootstrap-css-shaking
+# bootstrap-css-treeshaking
 
 ## What is this?
 
-**bootstrap-css-shaking** is a css minifier, currently only used for [bootstrap](https://getbootstrap.com/docs/4.6/getting-started/introduction/).  
+**bootstrap-css-treeshaking** is a css minifier, currently only used for [bootstrap](https://getbootstrap.com/docs/4.6/getting-started/introduction/).  
 Do you have any of the following experiences when using **bootstrap**?
 
 1. The css file is too large
