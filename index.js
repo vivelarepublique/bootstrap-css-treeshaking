@@ -138,11 +138,11 @@ function writeCssFile(globalStyle, mediaQueries, fileArgument) {
 
         //types
         const types = body.match(/(?<=type=").+?(?=")/g);
-        const typesArray = Array.from(new Set(types));
+        const typeArray = Array.from(new Set(types));
 
         const typesResult = [];
 
-        typesArray.forEach(el => {
+        typeArray.forEach(el => {
             const elString = `input[type=\"${el}\"]`;
             cssContent.forEach(({ selector, content }) => {
                 if (selector.includes(elString)) {
@@ -190,13 +190,18 @@ function writeCssFile(globalStyle, mediaQueries, fileArgument) {
             });
         }
 
-        //console.log(elementArray, '\n', classNameArray, '\n', typesArray);
+        //console.log(elementArray, '\n', classNameArray, '\n', typeArray);
 
         const minCss = [...specialElementsResult, ...mergeCss(elementsResult), ...mergeCss(classNamesResult), ...mergeCss(typesResult), ...mediaQueriesResult].reduce((acc, cur) => acc + '\n\n' + cur, '').trim();
 
-        writeFileSync(join('test/', 'min.css'), minCss);
+        try {
+            writeFileSync(join('test/', 'min.css'), minCss);
+            console.log('The CSS file after treeshaking has been written to .\\test\\min.css');
+        } catch (error) {
+            console.log('File write failed.');
+        }
     } else {
-        console.log('The template html file was not found, please make sure that the command you executed contains an html file. \nSuch as: node .\\index.js test/index.html');
+        console.log('The template html file was not found, please make sure that the command you executed contains an html file. \nSuch as: npm run begin .\\test\\index.html');
     }
 }
 
