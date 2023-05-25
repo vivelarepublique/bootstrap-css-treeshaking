@@ -77,16 +77,25 @@ function writeCssFile(globalStyle, mediaQueries, fileArgument) {
         const elements = body.match(/(?<=<)\w+(?=\s|(?=>))/g);
         const elementArray = Array.from(new Set(elements));
 
-        const step1Result = [];
+        const elementsResult = [];
 
         elementArray.forEach((el, _, self) => {
             cssContent.forEach(({ selector, content, overall }) => {
                 selector.forEach(item => {
                     if (self.includes(item)) {
-                        const result = item + ' ' + content;
-                        step1Result.push(result);
+                        const result = {
+                            a: item,
+                            b: content,
+                        };
+                        elementsResult.push(result);
                     }
-                    if (item.includes(':') && item.substring(0, item.indexOf(':')) === el) step1Result.push(overall);
+                    if (item.includes(':') && item.substring(0, item.indexOf(':')) === el) {
+                        const result = {
+                            a: item,
+                            b: content,
+                        };
+                        elementsResult.push(result);
+                    }
                 });
             });
         });
@@ -95,24 +104,33 @@ function writeCssFile(globalStyle, mediaQueries, fileArgument) {
         const classNames = body.match(/(?<=class=")[a-zA-Z0-9\-\s]+?(?=")/g);
         const classNameArray = Array.from(new Set(Array.from(classNames).reduce((acc, cur) => acc.concat(cur.split(' ')), [])));
 
-        const step2Result = [];
+        const classNamesResult = [];
 
         classNameArray.forEach((el, _, self) => {
             cssContent.forEach(({ selector, content }) => {
                 selector.forEach(item => {
                     if (item.includes('>') || item.includes('+')) {
                         if (item.match(/(?<=\.)[a-zA-Z0-9\-]+/g)?.every(m => self.includes(m))) {
-                            const result = item + ' ' + content;
-                            step2Result.push(result);
+                            const result = {
+                                a: item,
+                                b: content,
+                            };
+                            classNamesResult.push(result);
                         }
                     } else if (item.includes(':')) {
                         if (item.substring(1, item.indexOf(':')) === el) {
-                            const result = item + ' ' + content;
-                            step2Result.push(result);
+                            const result = {
+                                a: item,
+                                b: content,
+                            };
+                            classNamesResult.push(result);
                         }
                     } else if (self.includes(item.substring(1))) {
-                        const result = item + ' ' + content;
-                        step2Result.push(result);
+                        const result = {
+                            a: item,
+                            b: content,
+                        };
+                        classNamesResult.push(result);
                     }
                 });
             });
@@ -122,14 +140,17 @@ function writeCssFile(globalStyle, mediaQueries, fileArgument) {
         const types = body.match(/(?<=type=").+?(?=")/g);
         const typesArray = Array.from(new Set(types));
 
-        const step3Result = [];
+        const typesResult = [];
 
         typesArray.forEach(el => {
             const elString = `input[type=\"${el}\"]`;
             cssContent.forEach(({ selector, content }) => {
                 if (selector.includes(elString)) {
-                    const result = elString + ' ' + content;
-                    step3Result.push(result);
+                    const result = {
+                        a: elString,
+                        b: content,
+                    };
+                    typesResult.push(result);
                 }
             });
         });
@@ -171,12 +192,43 @@ function writeCssFile(globalStyle, mediaQueries, fileArgument) {
 
         //console.log(elementArray, '\n', classNameArray, '\n', typesArray);
 
-        const minCss = Array.from(new Set([...specialElementsResult, ...step1Result, ...step2Result, ...step3Result, ...mediaQueriesResult]))
-            .reduce((acc, cur) => acc + '\n\n' + cur, '')
-            .trim();
+        const minCss = [...specialElementsResult, ...mergeCss(elementsResult), ...mergeCss(classNamesResult), ...mergeCss(typesResult), ...mediaQueriesResult].reduce((acc, cur) => acc + '\n\n' + cur, '').trim();
 
         writeFileSync(join('test/', 'min.css'), minCss);
     } else {
         console.log('The template html file was not found, please make sure that the command you executed contains an html file. \nSuch as: node .\\index.js test/index.html');
     }
+}
+
+function mergeCss(arr) {
+    const uniqueArr = arr.filter((item, index, self) => index === self.findIndex(el => el.a === item.a && el.b === item.b));
+
+    const merged = uniqueArr
+        .reduce((acc, cur) => {
+            const index = acc.findIndex(el => el.b === cur.b);
+            if (index !== -1) {
+                acc[index].a = [acc[index].a, cur.a].sort().join(',\n');
+            } else {
+                acc.push(cur);
+            }
+            return acc;
+        }, [])
+        .reduce((acc, cur) => {
+            const index = acc.findIndex(el => el.a === cur.a);
+            if (index !== -1) {
+                const accCss = acc[index].b.match(/[^\{\n\}]+/gm) ?? [];
+                const curCss = cur.b.match(/[^\{\n\}]+/gm) ?? [];
+                const newCss = Array.from(new Set([...accCss, ...curCss]))
+                    .sort()
+                    .reduce((ac, cu) => ac + '\n' + cu);
+                acc[index].b = '{\n' + newCss + '\n}';
+            } else {
+                acc.push(cur);
+            }
+            return acc;
+        }, [])
+        .map(el => el.a + ' ' + el.b)
+        .sort();
+
+    return merged;
 }
