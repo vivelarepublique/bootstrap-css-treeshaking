@@ -60,7 +60,7 @@ function globalStyle() {
 }
 
 function writeCssFile(globalStyle, mediaQueries, fileArgument) {
-    const specialElements = ['html', 'body'];
+    const specialElements = [':root', 'html', 'body'];
 
     if (fileArgument) {
         const html = readFileSync(argv[2], { encoding: 'utf-8' });
@@ -80,7 +80,7 @@ function writeCssFile(globalStyle, mediaQueries, fileArgument) {
         const elementsResult = [];
 
         elementArray.forEach((el, _, self) => {
-            cssContent.forEach(({ selector, content, overall }) => {
+            cssContent.forEach(({ selector, content }) => {
                 selector.forEach(item => {
                     if (self.includes(item)) {
                         const result = {
