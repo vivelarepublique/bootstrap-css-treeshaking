@@ -15,16 +15,18 @@ Use this tool to help you solve the above problems.
 
 ### Prerequisite
 
-You have to install [Nodejs](https://nodejs.org/en) first.
+You have to install [Nodejs](https://nodejs.org/en).
 
 ### Steps
 
 ```bash
 git clone https://github.com/vivelarepublique/bootstrap-css-treeshaking.git
 
-node .\index.js {your html file path}
+cd bootstrap-css-treeshaking
+
+npm run test 
 ```
 
-Then a **min.css** file will be generated in the **\test** directory.
+Then a `min.css` file will be generated in the `\test` directory.
 
-Replace the original **bootstrap.css** with this new css file.
+This file is generated based on `\test\template.html`, if you want to use your own html file, please modify the content of `\test\template.html`, or use the this command:`npm run begin {your HTML file location}`.

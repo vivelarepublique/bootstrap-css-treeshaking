@@ -1,0 +1,20 @@
+{
+    "name": "bootstrap-css-treeshaking",
+    "version": "1.0.0",
+    "description": "**bootstrap-css-shaking** is a css minifier, currently only used for [bootstrap](https://getbootstrap.com/docs/4.6/getting-started/introduction/).",
+    "main": "index.js",
+    "author": "vivelarepublique",
+    "license": "MIT",
+    "scripts": {
+        "test": "node .\\index.js .\\test\\template.html",
+        "begin": "node .\\index.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/vivelarepublique/bootstrap-css-treeshaking.git"
+    },
+    "bugs": {
+        "url": "https://github.com/vivelarepublique/bootstrap-css-treeshaking/issues"
+    },
+    "homepage": "https://github.com/vivelarepublique/bootstrap-css-treeshaking#readme"
+}
