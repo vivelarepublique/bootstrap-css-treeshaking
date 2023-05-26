@@ -104,18 +104,36 @@ function writeCssFile(globalStyle, mediaQueries, fileArgument) {
         const classNames = body.match(/(?<=class=")[a-zA-Z0-9\-\s]+?(?=")/g);
         const classNameArray = Array.from(new Set(Array.from(classNames).reduce((acc, cur) => acc.concat(cur.split(' ')), [])));
 
+        const vueClassNames = (body.match(/(?<=\:class\=\"\{).+(?=\}\")/g) ?? [])
+            .reduce((acc, cur) => acc.concat(cur.split(' ')), [])
+            .map(el => el.replace(/[^a-zA-Z0-9\-]/g, ''))
+            .filter(el => el);
+
+        const vueClass = Array.from(new Set(vueClassNames));
+        classNameArray.push(...vueClass);
+
         const classNamesResult = [];
 
         classNameArray.forEach((el, _, self) => {
             cssContent.forEach(({ selector, content }) => {
                 selector.forEach(item => {
-                    if (item.includes('>') || item.includes('+')) {
-                        if (item.match(/(?<=\.)[a-zA-Z0-9\-]+/g)?.every(m => self.includes(m))) {
-                            const result = {
-                                a: item,
-                                b: content,
-                            };
-                            classNamesResult.push(result);
+                    if (item.includes('>') || item.includes('+') || (item.lastIndexOf('.') !== -1 && item.lastIndexOf('.') !== 0)) {
+                        if (item.substring(0, 1) === '.') {
+                            if (item.match(/(?<=\.)[a-zA-Z0-9\-]+/g)?.every(m => self.includes(m))) {
+                                const result = {
+                                    a: item,
+                                    b: content,
+                                };
+                                classNamesResult.push(result);
+                            }
+                        } else {
+                            if (elementArray.includes(item.substring(0, item.indexOf('.'))) && item.match(/(?<=\.)[a-zA-Z0-9\-]+/g)?.every(m => self.includes(m))) {
+                                const result = {
+                                    a: item,
+                                    b: content,
+                                };
+                                classNamesResult.push(result);
+                            }
                         }
                     } else if (item.includes(':')) {
                         if (item.substring(1, item.indexOf(':')) === el) {
@@ -143,15 +161,27 @@ function writeCssFile(globalStyle, mediaQueries, fileArgument) {
         const typesResult = [];
 
         typeArray.forEach(el => {
-            const elString = `input[type=\"${el}\"]`;
+            const elString = `type=\"${el}\"`;
             cssContent.forEach(({ selector, content }) => {
-                if (selector.includes(elString)) {
-                    const result = {
-                        a: elString,
-                        b: content,
-                    };
-                    typesResult.push(result);
-                }
+                selector.forEach(item => {
+                    if (new RegExp(elString).test(item)) {
+                        if (item.includes('.')) {
+                            if (item.match(/(?<=\.)[a-zA-Z0-9\-]+/g)?.every(m => classNameArray.includes(m))) {
+                                const result = {
+                                    a: item,
+                                    b: content,
+                                };
+                                typesResult.push(result);
+                            }
+                        } else {
+                            const result = {
+                                a: item,
+                                b: content,
+                            };
+                            typesResult.push(result);
+                        }
+                    }
+                });
             });
         });
 
